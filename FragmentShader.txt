@@ -1,0 +1,86 @@
+#version 330 core
+
+
+in vec2 pass_textureCoords;
+in vec3 surfaceNormal;
+in vec3 lightVector;
+in vec3 cameraVector;
+
+out vec4 outColor;
+
+uniform sampler2D modelTexture;
+uniform vec3 lightPosition;
+uniform vec3 lightColor;
+uniform float shineDamper;
+uniform float reflectivity;
+uniform int lightingMode;
+
+
+float nDot;
+float dist;
+float brightness;
+float ambientFactor = 0.3;
+float specularFactor;
+float dampedFactor;
+float attenuationFactor;
+vec3 nSurfaceNormal;
+vec3 nLightVector;
+vec3 nCameraVector;
+vec3 lightDirection;
+vec3 reflectedLightDirection;
+vec3 diffuse;
+vec3 specular;
+
+
+void Texture() {
+    outColor = ambientFactor * texture(modelTexture, pass_textureCoords);
+}
+
+
+void DiffuseLighting() {
+	dist = length(lightVector);
+	attenuationFactor = 0.5 + 0.001 * dist + 0.0001 * dist * dist;
+
+    nSurfaceNormal = normalize(surfaceNormal);
+    nLightVector = normalize(lightVector);
+
+    nDot = dot(nSurfaceNormal, nLightVector);
+    brightness = max(nDot, ambientFactor);
+
+	diffuse = (brightness * lightColor) / attenuationFactor;
+
+	outColor = texture(modelTexture, pass_textureCoords) * vec4(diffuse, 1.0);
+}
+
+
+void SpecularLighting() {
+    nCameraVector = normalize(cameraVector);
+    
+    lightDirection = -nLightVector;
+    reflectedLightDirection = reflect(lightDirection, nSurfaceNormal);
+
+    specularFactor = dot(reflectedLightDirection, nCameraVector);
+    specularFactor = max(specularFactor, 0.0);
+    dampedFactor = pow(specularFactor, shineDamper);
+
+    specular = dampedFactor * lightColor;
+
+    outColor = outColor + vec4(specular, 0.0);
+}
+
+
+void main() {
+    if (lightingMode == 1) {
+        Texture();
+	}
+
+    if (lightingMode == 2) {
+        DiffuseLighting();
+    }
+
+    else if (lightingMode == 3) {
+        DiffuseLighting();
+        SpecularLighting();
+    }
+}
+

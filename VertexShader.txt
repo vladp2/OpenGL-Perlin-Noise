@@ -1,0 +1,45 @@
+#version 330 core
+
+
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec2 textureCoords;
+layout (location = 2) in vec3 normal;
+layout (location = 3) in mat4 instancedMatrix;
+
+
+out vec2 pass_textureCoords;
+out vec3 surfaceNormal;
+out vec3 lightVector;
+out vec3 cameraVector;
+
+uniform mat4 modelMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform vec3 lightPosition;
+uniform int instanced;
+
+
+mat4 matrix;
+vec4 worldPosition;
+
+
+void main() {
+    if (instanced == 1) {
+        matrix = instancedMatrix;
+    }
+	else {
+		matrix = modelMatrix;
+	}
+    
+	worldPosition = matrix * vec4(position, 1.0);
+
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+	
+	pass_textureCoords = textureCoords;
+
+    surfaceNormal = (matrix * vec4(normal, 0.0)).xyz;
+    lightVector = lightPosition - worldPosition.xyz;
+
+    cameraVector = (inverse(viewMatrix) * vec4(0.0, 0.0, 0.0, 1.0)).xyz - worldPosition.xyz;
+}
+
